@@ -58,5 +58,5 @@ func fetchConfigPath() string {
 }
 
 func (c *Config) ToString() string {
-  return utils.StringifyStruct(c, "config.Config")
+  return utils.StringifyStruct(c)
 }

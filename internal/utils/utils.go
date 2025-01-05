@@ -1,8 +1,11 @@
 package utils
 
-import "encoding/json"
+import (
+  "encoding/json"
+  "fmt"
+)
 
-func StringifyStruct(v interface{}, structName string) string {
-  res, _ := json.MarshalIndent(v, "", "    ")
-  return structName + string(res)
+func StringifyStruct(v interface{}) string {
+  result, _ := json.MarshalIndent(v, "", "    ")
+  return fmt.Sprintf("%T", v) + string(result)
 }
