@@ -3,6 +3,7 @@ package main
 import (
   "log/slog"
   "os"
+  "sso/internal/app"
   "sso/internal/config"
   "sso/internal/lib/logger/handlers/slogpretty"
 )
@@ -20,7 +21,9 @@ func main() {
 
   log.Info("starting application", slog.Any("cfg", cfg))
 
-  // TODO: initialize app
+  application := app.New(log, cfg.GRPC.Port, cfg.StoragePath, cfg.TokenTTL)
+
+  application.GRPCSrv.MustRun()
 
   // TODO: launch gRPC-server apps
 
