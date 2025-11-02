@@ -1,11 +1,13 @@
 module sso
 
-go 1.23.0
+go 1.24
 
 require (
 	github.com/fatih/color v1.18.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/vahan-sahakyan/go-protobufs v0.0.2
+	github.com/vahan-sahakyan/go-protobufs v0.0.4
+	golang.org/x/crypto v0.28.0
 	google.golang.org/grpc v1.69.2
 )
 
