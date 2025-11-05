@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	authgrpc "sso/internal/grpc/auth"
 
 	"google.golang.org/grpc"
+
+	authgrpc "sso/internal/grpc/auth"
 )
 
 type App struct {

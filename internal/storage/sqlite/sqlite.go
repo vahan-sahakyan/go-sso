@@ -3,12 +3,12 @@ package sqlite
 import (
 	"database/sql"
 	"errors"
-	"sso/internal/domain/models"
-
 	"fmt"
+
 	"github.com/mattn/go-sqlite3"
-	_ "github.com/mattn/go-sqlite3"
 	"golang.org/x/net/context"
+
+	"sso/internal/domain/models"
 	"sso/internal/storage"
 )
 

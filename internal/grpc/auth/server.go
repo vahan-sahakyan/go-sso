@@ -3,10 +3,11 @@ package auth
 import (
 	"context"
 
-	ssov1 "github.com/vahan-sahakyan/go-protobufs/gen/go/sso"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	ssov1 "github.com/vahan-sahakyan/go-protobufs/gen/go/sso"
 )
 
 const (

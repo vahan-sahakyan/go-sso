@@ -2,10 +2,12 @@ package config
 
 import (
 	"flag"
-	"github.com/ilyakaznacheev/cleanenv"
 	"os"
-	"sso/internal/lib/utils"
 	"time"
+
+	"github.com/ilyakaznacheev/cleanenv"
+
+	"sso/internal/lib/utils"
 )
 
 type Config struct {
