@@ -25,6 +25,7 @@ type Auth interface {
 	// - token: A string representing the authentication token.
 	// - err: An error object if the login fails, otherwise nil.
 	Login(
+		ctx context.Context,
 		email string,
 		password string,
 		appID int,
@@ -39,6 +40,7 @@ type Auth interface {
 	// - userID: An integer representing the unique ID of the newly registered user.
 	// - err: An error object if the registration fails, otherwise nil.
 	RegisterNewUser(
+		ctx context.Context,
 		email string,
 		password string,
 	) (userID int64, err error)
@@ -70,7 +72,7 @@ func (s *serverApi) Login(ctx context.Context, req *ssov1.LoginRequest) (*ssov1.
 		return nil, err
 	}
 
-	token, err := s.auth.Login(req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
+	token, err := s.auth.Login(ctx, req.GetEmail(), req.GetPassword(), int(req.GetAppId()))
 
 	if err != nil {
 		// TODO: ...
@@ -87,7 +89,7 @@ func (s *serverApi) Register(ctx context.Context, req *ssov1.RegisterRequest) (*
 		return nil, err
 	}
 
-	userID, err := s.auth.RegisterNewUser(req.GetEmail(), req.GetPassword())
+	userID, err := s.auth.RegisterNewUser(ctx, req.GetEmail(), req.GetPassword())
 	if err != nil {
 		// TODO: ...
 		return nil, status.Error(codes.Internal, "internal error")

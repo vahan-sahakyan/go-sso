@@ -43,5 +43,7 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 
+.DS_Store
+
 ### GoLand Patch ###
 # Comment Reason: https://github.com/joeblau/gitignore.io/issues/186#issuecomment-215987721

@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
+
 	"sso/internal/domain/models"
 	"sso/internal/lib/jwt"
 	"sso/internal/lib/logger/sl"
 	"sso/internal/storage"
-	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -21,6 +22,12 @@ type Auth struct {
 	appProvider AppProvider
 	tokenTTL    time.Duration
 }
+
+var (
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrInvalidAppID       = errors.New("invalid application ID")
+	ErrUserAlreadyExists  = errors.New("user already exists")
+)
 
 type UserSaver interface {
 	SaveUser(
@@ -36,26 +43,9 @@ type UserProvider interface {
 }
 
 type AppProvider interface {
-	App(ctx context.Context, id int64) (models.App, error)
+	App(ctx context.Context, appID int) (models.App, error)
 }
 
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrInvalidAppID       = errors.New("invalid application ID")
-	ErrUserAlreadyExists  = errors.New("user already exists")
-)
-
-// New creates a new Auth service instance.
-//
-// Parameters:
-// - log:  A pointer to a slog.Logger for logging purposes.
-// - userSaver: An implementation of the UserSaver interface for saving user data.
-// - userProvider: An implementation of the UserProvider interface for retrieving user data.
-// - appProvider: An implementation of the AppProvider interface for retrieving application data.
-// - tokenTTL: A time.Duration representing the time-to-live for authentication tokens.
-//
-// Returns:
-// - A pointer to an Auth service instance.
 func New(
 	log *slog.Logger,
 	userSaver UserSaver,
@@ -72,6 +62,10 @@ func New(
 	}
 }
 
+// Login checks if user with given credentials exists in the system and returns access token.
+//
+// If user exists, but password is incorrect, returns error.
+// If user doesn't exist, returns error.
 func (a *Auth) Login(
 	ctx context.Context,
 	email string,
@@ -89,54 +83,42 @@ func (a *Auth) Login(
 
 	user, err := a.usrProvider.User(ctx, email)
 	if err != nil {
-
 		if errors.Is(err, storage.ErrUserNotFound) {
 			a.log.Warn("user not found", sl.Err(err))
+
 			return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 		}
 
 		a.log.Error("failed to get user", sl.Err(err))
+
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(user.PassHash, []byte(password)); err != nil {
-		a.log.Warn("invalid password", sl.Err(err))
+		a.log.Info("invalid credentials", sl.Err(err))
+
 		return "", fmt.Errorf("%s: %w", op, ErrInvalidCredentials)
 	}
 
-	app, err := a.appProvider.App(ctx, int64(appID))
+	app, err := a.appProvider.App(ctx, appID)
 	if err != nil {
-		if errors.Is(err, storage.ErrAppNotFound) {
-			log.Warn("app not found", sl.Err(err))
-			return "", fmt.Errorf("%s: %w", op, ErrInvalidAppID)
-		}
-
-		log.Error("failed to get app", sl.Err(err))
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
-	log.Info("user logged in successfully", slog.Int64("user_id", user.ID), slog.Int("app_id", app.ID))
+	log.Info("user logged in successfully")
 
 	token, err := jwt.NewToken(user, app, a.tokenTTL)
 	if err != nil {
 		a.log.Error("failed to generate token", sl.Err(err))
+
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
 	return token, nil
-
 }
 
-// RegisterNewUser registers a new user in the system.
-//
-// Parameters:
-// - ctx: The context for the operation.
-// - email: The email address of the new user.
-// - pass: The password for the new user.
-//
-// Returns:
-// - userID: An integer representing the unique ID of the newly registered user.
-// - err: An error object if the registration fails, otherwise nil.
+// RegisterNewUser registers a new user in the system and returns user ID.
+// If user with given username already exists, returns error.
 func (a *Auth) RegisterNewUser(
 	ctx context.Context,
 	email string,
@@ -151,33 +133,22 @@ func (a *Auth) RegisterNewUser(
 
 	passHash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
-		log.Error("failed to hash password", sl.Err(err))
+		log.Error("failed to generate password hash", sl.Err(err))
+
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
 	id, err := a.usrSaver.SaveUser(ctx, email, passHash)
 	if err != nil {
-		if errors.Is(err, storage.ErrUserExists) {
-			log.Warn("user already exists", sl.Err(err))
-			return 0, fmt.Errorf("%s: %w", op, ErrUserAlreadyExists)
-		}
 		log.Error("failed to save user", sl.Err(err))
+
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
 
-	log.Info("user registered")
 	return id, nil
 }
 
-// IsAdmin checks if a user has administrative privileges.
-//
-// Parameters:
-// - ctx: The context for the operation.
-// - userID: The unique ID of the user to be checked.
-//
-// Returns:
-// - isAdmin: A boolean indicating whether the user is an admin (true) or not (false).
-// - err: An error object if the check fails, otherwise nil.
+// IsAdmin checks if a user is admin.
 func (a *Auth) IsAdmin(
 	ctx context.Context,
 	userID int64,
@@ -192,9 +163,6 @@ func (a *Auth) IsAdmin(
 	log.Info("checking if user is admin")
 	isAdmin, err := a.usrProvider.IsAdmin(ctx, userID)
 	if err != nil {
-		if errors.Is(err, storage.ErrUserNotFound) {
-
-		}
 		return false, fmt.Errorf("%s: %w", op, err)
 	}
 
